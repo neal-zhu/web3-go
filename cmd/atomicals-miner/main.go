@@ -23,7 +23,7 @@ func main() {
 	result := make(chan atomicals.Result, 1)
 	go atomicals.Mine(input, result, reporter)
 	finalData := <-result
-	log.Printf("found solution cost: %v", finalData.FinalSequence, time.Since(start))
+	log.Printf("found solution cost: %v", time.Since(start))
 
 	enc := json.NewEncoder(os.Stdout)
 	if err := enc.Encode(finalData); err != nil {

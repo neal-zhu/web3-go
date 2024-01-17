@@ -60,15 +60,6 @@ func (c *CopiedData) MustEncodeCbor() []byte {
 
 func (c *Input) MustEncodeCbor() []byte {
 	return c.CopiedData.MustEncodeCbor()
-	//enc, err := cbor.CanonicalEncOptions().EncMode()
-	//if err != nil {
-	//	log.Fatalf("cbor.CanonicalEncOptions().EncMode() failed: %v", err)
-	//}
-	//data, err := enc.Marshal(c.CopiedData)
-	//if err != nil {
-	//	log.Fatalf("enc.Marshal(c) failed: %v", err)
-	//}
-	//return data
 }
 
 func (c *Input) MustBuildScript(cborData []byte) []byte {
@@ -146,6 +137,11 @@ type P2TR struct {
 	InternalPubKey *btcec.PublicKey
 	OutputKey      *btcec.PublicKey
 	Output         []byte
+}
+
+func (i *Input) MustBuildScriptP2TR() *P2TR {
+	hashScript := i.MustBuildScript(i.MustEncodeCbor())
+	return i.ScriptP2TR(hashScript)
 }
 
 func (i *Input) ScriptP2TR(script []byte) *P2TR {

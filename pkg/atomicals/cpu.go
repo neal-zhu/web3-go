@@ -27,7 +27,7 @@ func mine(i int, input Input, result chan<- Result, reporter *hashrate.HashRateR
 	txIn.Sequence = 0
 	msgTx.AddTxIn(txIn)
 
-	scriptP2TR := input.ScriptP2TR(input.UpdateScript())
+	scriptP2TR := input.MustBuildScriptP2TR()
 	txOut := wire.NewTxOut(int64(input.Fees.RevealFeePlusOutputs), scriptP2TR.Output)
 	msgTx.AddTxOut(txOut)
 	// add change utxo
@@ -51,7 +51,7 @@ func mine(i int, input Input, result chan<- Result, reporter *hashrate.HashRateR
 		binary.LittleEndian.PutUint32(serializedTx[42:], txIn.Sequence)
 		if txIn.Sequence == MAX_SEQUENCE {
 			input.CopiedData.Args.Nonce++
-			scriptP2TR := input.ScriptP2TR(input.UpdateScript())
+			scriptP2TR := input.MustBuildScriptP2TR()
 			txOut.PkScript = scriptP2TR.Output
 			txIn.Sequence = 0
 			buf := bytes.NewBuffer(make([]byte, 0, msgTx.SerializeSizeStripped()))
