@@ -26,11 +26,14 @@ func (r *HashRateReporter) Report(hashDone uint64) {
 }
 
 func (r *HashRateReporter) PrintLoop() {
-	now := time.Now()
-	diff := now.Sub(r.LastTime)
-	if diff > time.Second {
-		done := atomic.SwapUint64(&r.Counter, 0)
-		log.Printf("hashrate: %d/s", uint64(float64(done)/diff.Seconds()))
-		r.LastTime = now
+	for {
+		time.Sleep(time.Millisecond * 100)
+		now := time.Now()
+		diff := now.Sub(r.LastTime)
+		if diff > time.Second {
+			done := atomic.SwapUint64(&r.Counter, 0)
+			log.Printf("hashrate: %d/s", uint64(float64(done)/diff.Seconds()))
+			r.LastTime = now
+		}
 	}
 }
