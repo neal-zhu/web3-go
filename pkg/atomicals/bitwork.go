@@ -177,11 +177,16 @@ func (bw *BitworkInfo) ParsePreifx() {
 			log.Fatalf("hex.DecodeString(bw.Prefix[:len(bw.Prefix)-1]) failed: %v", err)
 		}
 		bw.PrefixPartial = new(byte)
-		*bw.PrefixPartial = byte(bw.Prefix[len(bw.Prefix)-1] - '0')
+		if bw.Prefix[len(bw.Prefix)-1] > '9' {
+			*bw.PrefixPartial = byte(bw.Prefix[len(bw.Prefix)-1] - 'a' + 10)
+		} else {
+			*bw.PrefixPartial = byte(bw.Prefix[len(bw.Prefix)-1] - '0')
+		}
 	}
 	bw.PrefixBytes = prefixBytes
 }
 
+// 30x faster than simple compare hex prefix
 func (bw *BitworkInfo) HasValidBitwork(hash *chainhash.Hash) bool {
 	i := 0
 	for ; i < len(bw.PrefixBytes); i++ {
@@ -199,11 +204,11 @@ func (bw *BitworkInfo) HasValidBitwork(hash *chainhash.Hash) bool {
 
 	if bw.Ext != nil {
 		if bw.PrefixPartial != nil {
-			if hash[31-i]&0xf != byte(*bw.Ext) {
+			if hash[31-i]&0xf < byte(*bw.Ext) {
 				return false
 			}
 		} else {
-			if hash[31-i]>>4 != byte(*bw.Ext) {
+			if hash[31-i]>>4 < byte(*bw.Ext) {
 				return false
 			}
 		}

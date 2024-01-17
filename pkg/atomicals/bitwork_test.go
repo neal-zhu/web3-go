@@ -81,6 +81,17 @@ func TestScriptP2TR(t *testing.T) {
 	}
 }
 
+func BenchmarkBitworkInfo(b *testing.B) {
+	bw := atomicals.BitworkInfo{
+		Prefix: "aabbccde",
+	}
+	bw.ParsePreifx()
+	hash, _ := chainhash.NewHashFromStr("aabbccde")
+	for i := 0; i < b.N; i++ {
+		bw.HasValidBitwork(hash)
+	}
+}
+
 func TestBitworkInfo(t *testing.T) {
 	type Test struct {
 		hash   string
@@ -115,6 +126,24 @@ func TestBitworkInfo(t *testing.T) {
 			prefix: "2b543",
 			ext:    10,
 			expect: true,
+		},
+		{
+			hash:   "2b543b6937b561458734e82ec9392a8449e97f9c8093948ae0b9419a0d92ad82",
+			prefix: "2b543",
+			ext:    10,
+			expect: true,
+		},
+		{
+			hash:   "2b543b6937b561458734e82ec9392a8449e97f9c8093948ae0b9419a0d92ad82",
+			prefix: "2b543b",
+			ext:    3,
+			expect: true,
+		},
+		{
+			hash:   "2b543b6937b561458734e82ec9392a8449e97f9c8093948ae0b9419a0d92ad82",
+			prefix: "2b543b",
+			ext:    7,
+			expect: false,
 		},
 		{
 			hash:   "2b543a6937b561458734e82ec9392a8449e97f9c8093948ae0b9419a0d92ad82",
