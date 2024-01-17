@@ -99,6 +99,16 @@ func TestBitworkInfo(t *testing.T) {
 		ext    int
 		expect bool
 	}
+	data := `{
+		"prefix": "2b540a",
+		"ext": 2
+	}`
+	var bw atomicals.BitworkInfo
+	if err := json.Unmarshal([]byte(data), &bw); err != nil {
+		t.Fatalf("json.Unmarshal([]byte(data), &bw) failed: %v", err)
+	}
+	bw.ParsePreifx()
+	t.Logf("%+v", bw)
 
 	for _, test := range []Test{
 		{
@@ -154,7 +164,7 @@ func TestBitworkInfo(t *testing.T) {
 	} {
 		bw := atomicals.BitworkInfo{Prefix: test.prefix}
 		if test.ext != 0 {
-			bw.Ext = &test.ext
+			bw.Ext = byte(test.ext)
 		}
 		bw.ParsePreifx()
 		hash, err := chainhash.NewHashFromStr(test.hash)

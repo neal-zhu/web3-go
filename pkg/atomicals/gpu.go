@@ -4,12 +4,13 @@
 package atomicals
 
 // #include <stdint.h>
-//uint32_t scanhash_sha256d(int thr_id, unsigned char* in, unsigned int inlen, unsigned char *target, unsigned int target_len, unsigned int threads, unsigned int start_seq, unsigned int *hashes_done);
-//#cgo LDFLAGS: -L. -L../cuda -lhash
+//uint32_t scanhash_sha256d(int thr_id, unsigned char* in, unsigned int inlen, unsigned char *target, unsigned int target_len, char pp, char ext, unsigned int threads, unsigned int start_seq, unsigned int *hashes_done);
+//#cgo LDFLAGS: -L. -L../../cuda -lhash
 import "C"
 import (
 	"bytes"
 	"go-atomicals/pkg/hashrate"
+	"log"
 	"os"
 
 	"github.com/btcsuite/btcd/wire"
@@ -52,17 +53,30 @@ func mine(i int, input Input, result chan<- Result, reporter *hashrate.HashRateR
 	serializedTx := buf.Bytes()
 
 	hashesDone := C.uint(0)
+	var (
+		pp  = -1
+		ext = -1
+	)
+	if input.WorkerBitworkInfoCommit.PrefixPartial != nil {
+		pp = int(*input.WorkerBitworkInfoCommit.PrefixPartial)
+	}
+	if input.WorkerBitworkInfoCommit.Ext != 0 {
+		ext = int(input.WorkerBitworkInfoCommit.Ext)
+	}
 	for {
 		seq := C.scanhash_sha256d(
 			C.int(i), // device id
 			(*C.uchar)(&serializedTx[0]),
 			C.uint(len(serializedTx)),
-			(*C.uchar)(&target[0]),
-			C.uint(len(target)),
-			C.uint(4096),
+			(*C.uchar)(&input.WorkerBitworkInfoCommit.PrefixBytes[0]),
+			C.uint(len(input.WorkerBitworkInfoCommit.PrefixBytes)),
+			C.char(pp),
+			C.char(ext),
+			C.uint(1<<25),
 			C.uint(txIn.Sequence),
 			&hashesDone,
 		)
+		log.Printf("device: %d, seq: %d, hashesDone: %d", i, seq, hashesDone)
 		if uint32(seq) != MAX_SEQUENCE {
 			txIn.Sequence = uint32(seq)
 			break
@@ -72,8 +86,12 @@ func mine(i int, input Input, result chan<- Result, reporter *hashrate.HashRateR
 		scriptP2TR := input.ScriptP2TR(input.UpdateScript())
 		txOut.PkScript = scriptP2TR.Output
 		txIn.Sequence = 0
+		buf := bytes.NewBuffer(make([]byte, 0, msgTx.SerializeSizeStripped()))
+		msgTx.SerializeNoWitness(buf)
+		serializedTx = buf.Bytes()
 	}
 
+	PrintMsgTx(msgTx)
 	result <- Result{
 		FinalCopyData: input.CopiedData,
 		FinalSequence: txIn.Sequence,

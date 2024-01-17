@@ -155,7 +155,7 @@ func (i *Input) ScriptP2TR(script []byte) *P2TR {
 
 type BitworkInfo struct {
 	Prefix string `json:"prefix"`
-	Ext    *int   `json:"ext"`
+	Ext    byte   `json:"ext"`
 
 	PrefixBytes   []byte `json:"-"`
 	PrefixPartial *byte  `json:"-"`
@@ -202,15 +202,13 @@ func (bw *BitworkInfo) HasValidBitwork(hash *chainhash.Hash) bool {
 		}
 	}
 
-	if bw.Ext != nil {
-		if bw.PrefixPartial != nil {
-			if hash[31-i]&0xf < byte(*bw.Ext) {
-				return false
-			}
-		} else {
-			if hash[31-i]>>4 < byte(*bw.Ext) {
-				return false
-			}
+	if bw.PrefixPartial != nil {
+		if hash[31-i]&0xf < bw.Ext {
+			return false
+		}
+	} else {
+		if hash[31-i]>>4 < bw.Ext {
+			return false
 		}
 	}
 	return true

@@ -14,18 +14,6 @@ import (
 	"github.com/btcsuite/btcd/wire"
 )
 
-func PrintMsgTx(msgTx *wire.MsgTx) {
-	log.Printf("version: %d", msgTx.Version)
-	for _, txIn := range msgTx.TxIn {
-		log.Printf("txin: %s %d", txIn.PreviousOutPoint.String(), txIn.Sequence)
-	}
-	for _, txOut := range msgTx.TxOut {
-		log.Printf("txout: %d %x", txOut.Value, txOut.PkScript)
-	}
-	log.Printf("locktime: %d", msgTx.LockTime)
-	log.Printf("hash: %s", msgTx.TxHash().String())
-}
-
 func mine(i int, input Input, result chan<- Result, reporter *hashrate.HashRateReporter) {
 	// set different time for each goroutine
 	input.CopiedData.Args.Time += uint32(i)
@@ -66,6 +54,9 @@ func mine(i int, input Input, result chan<- Result, reporter *hashrate.HashRateR
 			scriptP2TR := input.ScriptP2TR(input.UpdateScript())
 			txOut.PkScript = scriptP2TR.Output
 			txIn.Sequence = 0
+			buf := bytes.NewBuffer(make([]byte, 0, msgTx.SerializeSizeStripped()))
+			msgTx.SerializeNoWitness(buf)
+			serializedTx = buf.Bytes()
 		}
 		if localCounter == 102400 {
 			reporter.Report(uint64(localCounter))
