@@ -35,26 +35,40 @@ type WorkerOptions struct {
 }
 
 type Args struct {
-	Bitworkc   string `json:"bitworkc"`
-	MintTicker string `json:"mint_ticker"`
-	Nonce      uint32 `json:"nonce"`
-	Time       uint32 `json:"time"`
+	Bitworkc   *string `json:"bitworkc,omitempty"`
+	Bitworkr   *string `json:"bitworkr,omitempty"`
+	MintTicker string  `json:"mint_ticker"`
+	Nonce      uint32  `json:"nonce"`
+	Time       uint32  `json:"time"`
 }
 
 type CopiedData struct {
 	Args Args `json:"args"`
 }
 
-func (c *Input) MustEncodeCbor() []byte {
+func (c *CopiedData) MustEncodeCbor() []byte {
 	enc, err := cbor.CanonicalEncOptions().EncMode()
 	if err != nil {
 		log.Fatalf("cbor.CanonicalEncOptions().EncMode() failed: %v", err)
 	}
-	data, err := enc.Marshal(c.CopiedData)
+	data, err := enc.Marshal(c)
 	if err != nil {
 		log.Fatalf("enc.Marshal(c) failed: %v", err)
 	}
 	return data
+}
+
+func (c *Input) MustEncodeCbor() []byte {
+	return c.CopiedData.MustEncodeCbor()
+	//enc, err := cbor.CanonicalEncOptions().EncMode()
+	//if err != nil {
+	//	log.Fatalf("cbor.CanonicalEncOptions().EncMode() failed: %v", err)
+	//}
+	//data, err := enc.Marshal(c.CopiedData)
+	//if err != nil {
+	//	log.Fatalf("enc.Marshal(c) failed: %v", err)
+	//}
+	//return data
 }
 
 func (c *Input) MustBuildScript(cborData []byte) []byte {

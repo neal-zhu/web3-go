@@ -53,6 +53,27 @@ func TestKeyPairInfo(t *testing.T) {
 	t.Logf("%x", keyPairInfo.ChildNodeXOnlyPubkey)
 }
 
+func TestCBOR(t *testing.T) {
+	data := `{
+		"args": {
+		  "bitworkc": "000000",
+		  "bitworkr": "6238",
+		  "mint_ticker": "sophon",
+		  "nonce": 9999999,
+		  "time": 1705493802
+		}
+	}`
+	var copiedData atomicals.CopiedData
+	if err := json.Unmarshal([]byte(data), &copiedData); err != nil {
+		t.Fatalf("json.Unmarshal([]byte(data), &copiedData) failed: %v", err)
+	}
+
+	encoded := copiedData.MustEncodeCbor()
+	if hex.EncodeToString(encoded) != "a16461726773a56474696d651a65a7c52a656e6f6e63651a0098967f68626974776f726b636630303030303068626974776f726b7264363233386b6d696e745f7469636b657266736f70686f6e" {
+		t.Fatalf("encoded %x", encoded)
+	}
+}
+
 func TestBuildScript(t *testing.T) {
 	input := input
 	expectedPayload := "a16461726773a46474696d651a65899a24656e6f6e63651a0098967f68626974776f726b63666161626263636b6d696e745f7469636b657265717561726b"
@@ -218,10 +239,11 @@ func TestTx(t *testing.T) {
 }
 
 func TestT(t *testing.T) {
+	workc := "aabbcc"
 	input := atomicals.Input{
 		CopiedData: atomicals.CopiedData{
 			Args: atomicals.Args{
-				Bitworkc:   "aabbcc",
+				Bitworkc:   &workc,
 				MintTicker: "quark",
 				Nonce:      274483,
 				Time:       1703516711,
