@@ -1,5 +1,5 @@
-//go:build cpu
-// +build cpu
+//go:build cuda
+// +build cuda
 
 package atomicals_test
 
@@ -12,7 +12,7 @@ import (
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 )
 
-func TestCPUMine(t *testing.T) {
+func TestGPUMine(t *testing.T) {
 	var hash chainhash.Hash
 	input := atomicals.Input{
 		CopiedData: atomicals.CopiedData{
@@ -27,7 +27,8 @@ func TestCPUMine(t *testing.T) {
 			OpType: "dmt",
 		},
 		WorkerBitworkInfoCommit: atomicals.BitworkInfo{
-			Prefix: "aabbccdea",
+			Prefix: "aabbccde",
+			Ext:    5,
 		},
 		FundingWIF: "Kz9gWCiZGnHzxQBpbJW6UShBmxrMQXHktEfYAUcsbFkcyNcEAKzA",
 		FundingUtxo: atomicals.FundingUtxo{

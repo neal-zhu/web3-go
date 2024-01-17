@@ -179,47 +179,7 @@ __device__ void cuda_sha256_final(CUDA_SHA256_CTX *ctx, BYTE hash[])
 	}
 }
 
-__global__ void kernel_sha256_hash(BYTE* indata, WORD inlen, BYTE* outdata, WORD n_batch)
-{
-	WORD thread = blockIdx.x * blockDim.x + threadIdx.x;
-	if (thread >= n_batch)
-	{
-		return;
-	}
-	BYTE* in = indata  + thread * inlen;
-	BYTE* out = outdata  + thread * SHA256_BLOCK_SIZE;
-	CUDA_SHA256_CTX ctx;
-	cuda_sha256_init(&ctx);
-	cuda_sha256_update(&ctx, in, inlen);
-	cuda_sha256_final(&ctx, out);
-}
-
-__global__ void kernel_sha256d_hash(BYTE* indata, WORD inlen, BYTE* outdata, WORD threads)
-{
-	WORD thread = blockIdx.x * blockDim.x + threadIdx.x;
-	if (thread >= threads)
-	{
-		return;
-	}
-	BYTE* in = indata  + thread * inlen;
-	BYTE* out = outdata  + thread * SHA256_BLOCK_SIZE;
-	CUDA_SHA256_CTX ctx;
-	cuda_sha256_init(&ctx);
-	cuda_sha256_update(&ctx, in, inlen);
-	cuda_sha256_final(&ctx, out);
-
-	// copy 32 byts out into in
-	#pragma unroll
-	for (int i = 0; i < 32; i++)
-	{
-		in[i] = out[i];
-	}
-	cuda_sha256_init(&ctx);
-	cuda_sha256_update(&ctx, in, 32);
-	cuda_sha256_final(&ctx, out);
-}
-
-__global__ void kernel_sha256d_hash2(WORD threads, WORD inlen, WORD target_len, uint32_t start_seq, uint32_t *res_seq)
+__global__ void kernel_sha256d_hash(WORD threads, WORD inlen, WORD target_len, char prefix_partial, char ext, uint32_t start_seq, uint32_t *res_seq)
 {
 	WORD thread = blockIdx.x * blockDim.x + threadIdx.x;
 	if (thread >= threads)
@@ -247,26 +207,43 @@ __global__ void kernel_sha256d_hash2(WORD threads, WORD inlen, WORD target_len, 
 	cuda_sha256_final(&ctx, out);
 
 	// compare with target
-	for (int i = 0; i < target_len; i++)
+	int i = 0;
+	for (; i < target_len; i++)
 	{
 		if (out[31-i] != d_target[i])
 		{
 			return;
 		}
 	}
+	if (prefix_partial != -1) {
+		if (out[31-i] >> 4 != prefix_partial)
+		{
+			return;
+		}
+	}
+	if (ext != -1) {
+		if (prefix_partial != -1) {
+			if ((out[31-i] & 0xf) < ext) {
+				return;
+			}
+		} else {
+			if ((out[31-i] >> 4) < ext) {
+				return;
+			}
+		}
+	}
 
 	*res_seq = seq;
 }
 
-__host__ void sha256d_hash_tx(int thr_id, WORD threads, WORD inlen, WORD target_len, uint32_t start_seq, uint32_t *res_seq)
+__host__ void sha256d_hash_tx(int thr_id, WORD threads, WORD inlen, WORD target_len, char prefix_parital, char ext, uint32_t start_seq, uint32_t *res_seq)
 {
 	const uint32_t threadsperblock = 256;
 
 	dim3 grid(threads/threadsperblock);
 	dim3 block(threadsperblock);
 
-	CUDA_SAFE_CALL(cudaMemset(d_resNonces[thr_id], 0xFF, sizeof(uint32_t)));
-	kernel_sha256d_hash2<<<grid, block>>> (threads, inlen, target_len, start_seq, d_resNonces[thr_id]);
+	kernel_sha256d_hash<<<grid, block>>> (threads, inlen, target_len, prefix_parital, ext, start_seq, d_resNonces[thr_id]);
 	cudaDeviceSynchronize();
 	CUDA_SAFE_CALL(cudaMemcpy(res_seq, d_resNonces[thr_id], sizeof(uint32_t), cudaMemcpyDeviceToHost));
 	cudaError_t error = cudaGetLastError();
@@ -277,53 +254,11 @@ __host__ void sha256d_hash_tx(int thr_id, WORD threads, WORD inlen, WORD target_
 
 extern "C"
 {
-void mcm_cuda_sha256_hash_batch(BYTE* in, WORD inlen, BYTE* out, WORD n_batch)
-{
-	BYTE *cuda_indata;
-	BYTE *cuda_outdata;
-	cudaMalloc(&cuda_indata, inlen * n_batch);
-	cudaMalloc(&cuda_outdata, SHA256_BLOCK_SIZE * n_batch);
-	cudaMemcpy(cuda_indata, in, inlen * n_batch, cudaMemcpyHostToDevice);
 
-	WORD thread = 256;
-	WORD block = (n_batch + thread - 1) / thread;
-
-	kernel_sha256_hash << < block, thread >> > (cuda_indata, inlen, cuda_outdata, n_batch);
-	cudaMemcpy(out, cuda_outdata, SHA256_BLOCK_SIZE * n_batch, cudaMemcpyDeviceToHost);
-	cudaDeviceSynchronize();
-	cudaError_t error = cudaGetLastError();
-	if (error != cudaSuccess) {
-		printf("Error cuda sha256 hash: %s \n", cudaGetErrorString(error));
-	}
-	cudaFree(cuda_indata);
-	cudaFree(cuda_outdata);
-}
-
-void sha256d_hash(BYTE* in, WORD inlen, BYTE *out) {
-	int n_batch = 1;
-	BYTE *cuda_indata;
-	BYTE *cuda_outdata;
-	cudaMalloc(&cuda_indata, inlen * n_batch);
-	cudaMalloc(&cuda_outdata, SHA256_BLOCK_SIZE * n_batch);
-	cudaMemcpy(cuda_indata, in, inlen * n_batch, cudaMemcpyHostToDevice);
-
-	WORD thread = 256;
-	WORD block = (n_batch + thread - 1) / thread;
-
-	kernel_sha256d_hash << < block, thread >> > (cuda_indata, inlen, cuda_outdata, n_batch);
-	cudaMemcpy(out, cuda_outdata, SHA256_BLOCK_SIZE * n_batch, cudaMemcpyDeviceToHost);
-	cudaDeviceSynchronize();
-	cudaError_t error = cudaGetLastError();
-	if (error != cudaSuccess) {
-		printf("Error cuda sha256 hash: %s \n", cudaGetErrorString(error));
-	}
-	cudaFree(cuda_indata);
-	cudaFree(cuda_outdata);
-}
-
-uint32_t scanhash_sha256d(int thr_id, BYTE* in, WORD inlen, BYTE *target, WORD target_len, WORD threads, WORD start_seq, WORD *hashes_done) {
+uint32_t scanhash_sha256d(int thr_id, BYTE* in, WORD inlen, BYTE *target, WORD target_len, char prefix_parital, char ext, WORD threads, WORD start_seq, WORD *hashes_done) {
 
 	CUDA_SAFE_CALL(cudaMalloc(&d_resNonces[thr_id], sizeof(uint32_t)));
+	CUDA_SAFE_CALL(cudaMemset(d_resNonces[thr_id], 0xFF, sizeof(uint32_t)));
 	CUDA_SAFE_CALL(cudaMemcpyToSymbol(d_data, in, inlen, 0, cudaMemcpyHostToDevice));
 	CUDA_SAFE_CALL(cudaMemcpyToSymbol(d_target, target, target_len, 0, cudaMemcpyHostToDevice));
 
@@ -331,7 +266,7 @@ uint32_t scanhash_sha256d(int thr_id, BYTE* in, WORD inlen, BYTE *target, WORD t
 	uint32_t res_seq = UINT32_MAX;
 	while ((uint64_t) threads + seq <= UINT32_MAX) {
 		*hashes_done = seq - start_seq + threads;
-		sha256d_hash_tx(thr_id, threads, inlen, target_len, seq, &res_seq);
+		sha256d_hash_tx(thr_id, threads, inlen, target_len, prefix_parital, ext, seq, &res_seq);
 		if (res_seq != UINT32_MAX) {
 			break;
 		}
