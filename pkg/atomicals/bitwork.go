@@ -8,6 +8,7 @@ import (
 	"github.com/btcsuite/btcd/btcec/v2"
 	"github.com/btcsuite/btcd/btcec/v2/schnorr"
 	"github.com/btcsuite/btcd/btcutil"
+	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/fxamacker/cbor/v2"
@@ -83,18 +84,42 @@ func (c *Input) MustBuildScript(cborData []byte) []byte {
 func (i *Input) Init() {
 	// DO NOT CHANGE THE ORDER OF THESE CALLS
 	i.WorkerBitworkInfoCommit.ParsePreifx()
+	if i.WorkerBitworkInfoReveal != nil {
+		i.WorkerBitworkInfoReveal.ParsePreifx()
+	}
 	i.KeyPairInfo = i.MustBuildKeyPairInfo()
 	i.cbor_cache = i.MustEncodeCbor()
 	i.script_cache = i.MustBuildScript(i.cbor_cache)
 }
 
+type AdditionOutput struct {
+	Value   int64  `json:"value"`
+	Address string `json:"address"`
+}
+
+func (a *AdditionOutput) Output() []byte {
+	// return output script for address
+	address, err := btcutil.DecodeAddress(a.Address, &chaincfg.MainNetParams)
+	if err != nil {
+		log.Fatalf("btcutil.DecodeAddress(a.Address, &chaincfg.MainNetParams) failed: %v", err)
+	}
+	output, err := txscript.PayToAddrScript(address)
+	if err != nil {
+		log.Fatalf("txscript.PayToAddrScript(address) failed: %v", err)
+	}
+	return output
+}
+
 type Input struct {
-	CopiedData              CopiedData    `json:"copiedData"`
-	WorkerOptions           WorkerOptions `json:"workerOptions"`
-	FundingUtxo             FundingUtxo   `json:"fundingUtxo"`
-	WorkerBitworkInfoCommit BitworkInfo   `json:"workerBitworkInfoCommit"`
-	FundingWIF              string        `json:"fundingWIF"`
-	Fees                    Fees          `json:"fees"`
+	CopiedData              CopiedData       `json:"copiedData"`
+	WorkerOptions           WorkerOptions    `json:"workerOptions"`
+	FundingUtxo             FundingUtxo      `json:"fundingUtxo"`
+	WorkerBitworkInfoCommit *BitworkInfo     `json:"workerBitworkInfoCommit"`
+	WorkerBitworkInfoReveal *BitworkInfo     `json:"workerBitworkInfoReveal"`
+	FundingWIF              string           `json:"fundingWIF"`
+	Fees                    Fees             `json:"fees"`
+	RBF                     bool             `json:"rbf"`
+	AdditionOutputs         []AdditionOutput `json:"additionalOutputs"`
 
 	KeyPairInfo *KeyPairInfo `json:"-"`
 

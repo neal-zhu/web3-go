@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"go-atomicals/pkg/atomicals"
-	"log"
 	"testing"
 
 	"github.com/btcsuite/btcd/btcutil"
@@ -199,27 +198,6 @@ func TestBitworkInfo(t *testing.T) {
 
 }
 
-func PrintMsgTx(msgTx *wire.MsgTx) {
-	log.Printf("version: %d", msgTx.Version)
-	for _, txIn := range msgTx.TxIn {
-		log.Printf("txin: %s %d", txIn.PreviousOutPoint.String(), txIn.Sequence)
-	}
-	for _, txOut := range msgTx.TxOut {
-		log.Printf("txout: %d %x", txOut.Value, txOut.PkScript)
-	}
-	log.Printf("locktime: %d", msgTx.LockTime)
-	log.Printf("hash: %s", msgTx.TxHash().String())
-}
-
-func DecAndPrintTx(hexTx string) {
-	var msgTx wire.MsgTx
-	data, _ := hex.DecodeString(hexTx)
-	if err := msgTx.Deserialize(bytes.NewReader((data))); err != nil {
-		log.Fatalf("msgTx.Deserialize failed: %v", err)
-	}
-	PrintMsgTx(&msgTx)
-}
-
 func TestTx(t *testing.T) {
 	/*
 					2024/01/17 23:42:39 txin: aabbccc8daf7540db4841104e5ccd7b899691f3d6a166e5b00e1a66da0087ad5:1 2519223
@@ -236,14 +214,14 @@ func TestTx(t *testing.T) {
 		2024/01/17 23:39:07 locktime: 0
 		2024/01/17 23:39:07 hash: 0000003e6360d990c31bfe15693ce36db55043a73cc6069a15eb914a3fefad3d
 	*/
-	DecAndPrintTx("01000000000101d57a08a06da6e1005b6e166a3d1f6999b8d7cce5041184b40d54f7dac8ccbbaa0100000000b77026000274b3010000000000225120a843da35d393bf35929c6a42a0d954e7f9e824166d2bc709ae54ef3a53fcd35b95a4170000000000225120e1dd03f0270a3a76559dae82aac149b2fa7f13f7d3bf120780eaf8bb6ac6a95001402e42dd8188004dcf3a6a8a6368f54af956a47382609b0eb5036e101ddaa2d677a4fb458e106ae323612df99fc59fc52b38b25a842a5d3feb0f926688833a808600000000")
+	atomicals.DecAndPrintTx("010000000001010f8e35c03cdfcb47f89f39c354eb77e464e4f1934ae2392cf9954c1afc0000000000000000ffffffff02a086010000000000225120017b45db1829fdbb4e6d151281c245eaf24e3eba66b7d91a62706c67114b3fa60000000000000000156a13313730353735373031393a303031363631393103404115feca81c150ef80e0a9c2e718b7c6e5240ceadb2ba3e7a35c6255bf9468857af1d441dad1968c6a6cc2388826fd67cfa9ec4108851902445c57de0b7072a97d20c85213ca3db22c66947ad20a7a89ba9c4b89917f76a309bee98dd77dcaad3957ac00630461746f6d03646d744c4da16461726773a56474696d651a65abc951656e6f6e63651a0001000068626974776f726b636630303030303068626974776f726b7264363233386b6d696e745f7469636b657266736f70686f6e6821c1c85213ca3db22c66947ad20a7a89ba9c4b89917f76a309bee98dd77dcaad395700000000")
 
 	var msgTx wire.MsgTx
 	data, _ := hex.DecodeString("010000000001015e6e17f985d76d36bad983d95931417a5fd217a472972f8eb0e8908447ccbbaa0100000000051c1d0002d5a4000000000000225120ef239ee9203123505c8051fe14ce53c3245d459b393b398f9449b7c6c0e7c7639b32ab00000000002251200e8162c8e0d8e413c2ab9d2bd1e16857804c9a8dcbd432b1c479f3c7e16925c901401ef516cfcb873fafb7082d126a2968180dbea3363d29119199a28397ee90b9f9d9d237aa25e0a541d2fe91a2f143f26e1c01b6a27f6f3b2053fb622ca8e64ec300000000")
 	if err := msgTx.Deserialize(bytes.NewReader(data)); err != nil {
 		t.Fatalf("msgTx.Deserialize failed: %v", err)
 	}
-	PrintMsgTx(&msgTx)
+	atomicals.PrintMsgTx(&msgTx)
 
 	w := bytes.NewBuffer(nil)
 
@@ -329,7 +307,7 @@ func TestT(t *testing.T) {
 	if err := msgTx.Deserialize(bytes.NewReader(data)); err != nil {
 		t.Fatalf("msgTx.Deserialize failed: %v", err)
 	}
-	PrintMsgTx(&msgTx)
+	atomicals.PrintMsgTx(&msgTx)
 
 	scriptP2TR := input.ScriptP2TR(input.UpdateScript())
 	t.Logf("%x %x", scriptP2TR.Output, scriptP2TR.OutputKey.SerializeCompressed()[1:])

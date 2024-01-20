@@ -7,20 +7,27 @@ import (
 	"bytes"
 	"encoding/binary"
 	"go-atomicals/pkg/hashrate"
-	"log"
 	"runtime"
 
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/wire"
 )
 
-func mine(i int, input Input, result chan<- Result, reporter *hashrate.HashRateReporter) {
+func mine(i int, input Input, resultCh chan<- Result, reporter *hashrate.HashRateReporter) {
 	// set different time for each goroutine
 	input.CopiedData.Args.Time += uint32(i)
 	// use uint32 so we can avoid cbor encoding at runtime
 	input.CopiedData.Args.Nonce = uint32(^uint16(0)) + 1
 	input.Init()
 
+	result := MineCommitTx(i, &input, reporter)
+	revealTxHash, embed := MineRevealTx(&input, result, reporter)
+	result.RevealTxhash = &revealTxHash
+	result.Embed = string(embed)
+	resultCh <- *result
+}
+
+func MineCommitTx(i int, input *Input, reporter *hashrate.HashRateReporter) *Result {
 	msgTx := wire.NewMsgTx(wire.TxVersion)
 	output := wire.NewOutPoint(input.FundingUtxo.Txid, input.FundingUtxo.Index)
 	txIn := wire.NewTxIn(output, nil, nil)
@@ -39,11 +46,10 @@ func mine(i int, input Input, result chan<- Result, reporter *hashrate.HashRateR
 	msgTx.SerializeNoWitness(buf)
 	serializedTx := buf.Bytes()
 	localCounter := 0
+	var hash chainhash.Hash
 	for {
-		hash := chainhash.DoubleHashH(serializedTx)
+		hash = chainhash.DoubleHashH(serializedTx)
 		if input.WorkerBitworkInfoCommit.HasValidBitwork(&hash) {
-			log.Printf("worker %d found args %+v", i, input.CopiedData.Args)
-			PrintMsgTx(msgTx)
 			break
 		}
 		localCounter++
@@ -63,9 +69,10 @@ func mine(i int, input Input, result chan<- Result, reporter *hashrate.HashRateR
 			localCounter = 0
 		}
 	}
-	result <- Result{
+	return &Result{
 		FinalCopyData: input.CopiedData,
 		FinalSequence: txIn.Sequence,
+		CommitTxHash:  &hash,
 	}
 }
 
