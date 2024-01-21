@@ -54,12 +54,11 @@ func MineRevealTx(input *Input, result *Result, reporter *hashrate.HashRateRepor
 		revealTxHash = chainhash.DoubleHashH(serializedTx)
 		if input.WorkerBitworkInfoReveal.HasValidBitwork(&revealTxHash) {
 			output.PkScript = embed
-			PrintMsgTx(tx)
 			break
 		}
 		nonce++
 		data = []byte(fmt.Sprintf("%d:%08d", now, nonce))
-		embed, _ := txscript.NullDataScript(data)
+		embed, _ = txscript.NullDataScript(data)
 		copy(serializedTx[embedIndex:], embed)
 		if nonce == 10000000 {
 			nonce = 0
