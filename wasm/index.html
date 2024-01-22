@@ -1,13 +1,68 @@
+<!DOCTYPE html>
 <html>
-	<head>
-		<meta charset="utf-8"/>
-		<script src="wasm_exec.js"></script>
-		<script>
-			const go = new Go();
-			WebAssembly.instantiateStreaming(fetch("main.wasm"), go.importObject).then((result) => {
-				go.run(result.instance);
-			});
-		</script>
-	</head>
-	<body></body>
+
+<head>
+    <title>Multiple Web Workers</title>
+</head>
+
+<body>
+    <h1>Multiple Web Workers</h1>
+    <input type="number" id="numOfWorkers" placeholder="Number of Workers">
+    <button id="initButton">Initialize Workers</button>
+    <button id="startButton">Start Workers</button>
+    <p>Results:</p>
+    <ul id="resultsList"></ul>
+
+    <script>
+        let workers = [];
+        let resultsList = document.getElementById('resultsList');
+        let isTaskCompleted = false; // 标记是否有 Worker 已完成任务
+
+        function initializeWorkers(numOfWorkers) {
+            // 重置状态和清除旧的 Workers
+            isTaskCompleted = false;
+            workers.forEach(worker => worker.terminate());
+            workers = [];
+            resultsList.innerHTML = '';
+
+            for (let i = 0; i < numOfWorkers; i++) {
+                let worker = new Worker('worker.js');
+
+                worker.addEventListener('message', e => {
+                    if (!isTaskCompleted) {
+                        isTaskCompleted = true; // 标记任务已完成
+                        terminateAllWorkers(); // 终止所有其他 Workers
+
+                        let li = document.createElement('li');
+                        li.textContent = 'Result from worker ' + (i + 1) + ': ' + e.data;
+                        resultsList.appendChild(li);
+                    }
+                });
+
+                workers.push(worker);
+            }
+        }
+
+        function startWorkers() {
+            workers.forEach((worker, index) => {
+                worker.postMessage([index + 5, 3]); // 向每个 Worker 发送数据
+            });
+        }
+
+        function terminateAllWorkers() {
+            workers.forEach(worker => worker.terminate());
+        }
+
+        document.getElementById('initButton').addEventListener('click', () => {
+            let numOfWorkers = parseInt(document.getElementById('numOfWorkers').value) || 0;
+            initializeWorkers(numOfWorkers);
+        });
+
+        document.getElementById('startButton').addEventListener('click', () => {
+            startWorkers();
+        });
+
+    </script>
+</body>
+
 </html>
