@@ -27,7 +27,6 @@
 
             for (let i = 0; i < numOfWorkers; i++) {
                 let worker = new Worker('worker.js');
-
                 worker.addEventListener('message', e => {
                     if (!isTaskCompleted) {
                         isTaskCompleted = true; // 标记任务已完成
@@ -45,7 +44,7 @@
 
         function startWorkers() {
             workers.forEach((worker, index) => {
-                worker.postMessage([index + 5, 3]); // 向每个 Worker 发送数据
+                worker.postMessage(index); // 向每个 Worker 发送数据
             });
         }
 

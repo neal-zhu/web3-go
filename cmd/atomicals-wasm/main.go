@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"go-atomicals/pkg/atomicals"
 	"go-atomicals/pkg/hashrate"
 	"log"
@@ -22,7 +21,6 @@ func main() {
 		if err := json.Unmarshal([]byte(args[0].String()), &input); err != nil {
 			return "{}"
 		}
-		fmt.Printf("input %s\n", args[0].String())
 		start := time.Now()
 		reporter := hashrate.NewReporter()
 		// core count

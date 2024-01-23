@@ -254,7 +254,6 @@ func (i *Input) GetCommitChange() int64 {
 	totalOutputsValue := i.Fees.RevealFeePlusOutputs
 	calculatedFee := totalInputsValue - totalOutputsValue
 	if calculatedFee <= 0 {
-		log.Printf("calculatedFee <= 0, totalInputsValue: %d, totalOutputsValue: %d", totalInputsValue, totalOutputsValue)
 		return 0
 	}
 	expectedFee := i.Fees.CommitFeeOnly + i.WorkerOptions.SatsByte*43

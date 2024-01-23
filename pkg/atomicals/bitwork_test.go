@@ -2,6 +2,7 @@ package atomicals_test
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
@@ -13,10 +14,9 @@ import (
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/wire"
-	"github.com/fxamacker/cbor/v2"
 )
 
-var inputStr = `{"copiedData":{"args":{"bitworkc":"aabbcc","mint_ticker":"quark","nonce":9999999,"time":1703516708}},"workerOptions":{"opType":"dmt"},"fundingUtxo":{"txid":"","txId":"","outputIndex":0,"index":0,"vout":0,"value":0},"workerBitworkInfoCommit":{"prefix":"","ext":0},"fundingWIF":"Kz9gWCiZGnHzxQBpbJW6UShBmxrMQXHktEfYAUcsbFkcyNcEAKzA"}`
+var inputStr = `{"copiedData":{"args":{"bitworkc":"000000","bitworkr":"6238","mint_ticker":"sophon","nonce":9999999,"time":1705918935}},"nonceStart":0,"nonceEnd":9999999,"workerOptions":{"electrumApi":{"baseUrl":"http://ep.atomicalneutron.com/proxy","usePost":true,"isOpenFlag":false},"satsbyte":10,"address":"bc1pq9a5tkcc987mknndz5fgrsj9ateyu046v6majxnzwpkxwy2t87nqygunry","opType":"dmt","dmtOptions":{"mintAmount":100000,"ticker":"sophon"}},"fundingWIF":"L4cjYizvfRVpjLNjZDqTYuKD5fJugNoYkTkYFDjpw21UrL5E4JT1","fundingUtxo":{"txid":"0000008674690288a63dd83588d3a765a45a02aa9b6954b7eba16daf58507006","vout":1,"status":{"confirmed":true,"block_height":826688,"block_hash":"0000000000000000000169fe9dbf52a11829a4c730e38b3d81fe11f399f4ca3c","block_time":1705844320},"value":17437,"index":1},"fees":{"commitAndRevealFee":2920,"commitAndRevealFeePlusOutputs":102920,"revealFeePlusOutputs":101810,"commitFeeOnly":1110,"revealFeeOnly":1810},"performBitworkForCommitTx":true,"workerBitworkInfoCommit":{"input_bitwork":"000000","hex_bitwork":"000000","prefix":"000000"},"scriptP2TR":null,"hashLockP2TR":null,"workerBitworkInfoReveal":{"input_bitwork":"6238","hex_bitwork":"6238","prefix":"6238"},"additionalOutputs":[{"address":"bc1pq9a5tkcc987mknndz5fgrsj9ateyu046v6majxnzwpkxwy2t87nqygunry","value":100000}]}`
 var input atomicals.Input
 
 func init() {
@@ -25,6 +25,29 @@ func init() {
 		panic(err)
 	}
 	input.Init()
+}
+
+func BenchmarkHash1(b *testing.B) {
+	w := []byte("hello")
+	for i := 0; i < b.N; i++ {
+		chainhash.DoubleHashB(w)
+	}
+
+}
+
+func BenchmarkHash2(b *testing.B) {
+	w := []byte("hello")
+	hasher := sha256.New()
+	first := make([]byte, 32)
+	for i := 0; i < b.N; i++ {
+		hasher.Reset()
+		hasher.Write(w)
+		hasher.Sum(first[:0])
+		hasher.Reset()
+		hasher.Write(first)
+		hasher.Sum(nil)
+	}
+
 }
 
 func TestKeyPairInfo(t *testing.T) {
@@ -250,67 +273,4 @@ func TestTx(t *testing.T) {
 
 		msgTx.TxIn[0].Sequence++
 	}
-}
-
-func TestT(t *testing.T) {
-	workc := "aabbcc"
-	input := atomicals.Input{
-		CopiedData: atomicals.CopiedData{
-			Args: atomicals.Args{
-				Bitworkc:   &workc,
-				MintTicker: "quark",
-				Nonce:      274483,
-				Time:       1703516711,
-			},
-		},
-		WorkerOptions: atomicals.WorkerOptions{
-			OpType: "dmt",
-		},
-		FundingWIF: "Kz9gWCiZGnHzxQBpbJW6UShBmxrMQXHktEfYAUcsbFkcyNcEAKzA",
-	}
-	input.Init()
-	if !bytes.Equal(input.UpdateCborCache(), input.MustEncodeCbor()) {
-		t.Logf("%x", input.UpdateCborCache())
-		t.Logf("%x", input.MustEncodeCbor())
-		d1 := input.MustEncodeCbor()
-		d2 := input.UpdateCborCache()
-		var cp1, cp2 atomicals.CopiedData
-		if err := cbor.Unmarshal(d1, &cp1); err != nil {
-			t.Fatalf("cbor.Unmarshal(d1, &cp1) failed: %v", err)
-		}
-		t.Logf("%+v", cp1)
-		if err := cbor.Unmarshal(d2, &cp2); err != nil {
-			t.Fatalf("cbor.Unmarshal(d2, &cp2) failed: %v", err)
-		}
-		t.Logf("%+v", cp2)
-		t.Fatalf("cborData not match")
-	}
-	if !bytes.Equal(input.UpdateScript(), input.MustBuildScript(input.UpdateCborCache())) {
-		t.Logf("%x", input.UpdateScript())
-		t.Logf("%x", input.MustBuildScript(input.UpdateCborCache()))
-		t.Fatalf("script not match")
-	}
-	if hex.EncodeToString(input.UpdateCborCache()) != "a16461726773a46474696d651a65899a27656e6f6e63651a0004303368626974776f726b63666161626263636b6d696e745f7469636b657265717561726b" {
-		t.Fatalf("cborData %x", input.UpdateCborCache())
-	}
-	if hex.EncodeToString(input.MustBuildScript(input.UpdateCborCache())) != "202b540a6937b561458734e82ec9392a8449e97f9c8093948ae0b9419a0d92ad82ac00630461746f6d03646d743ea16461726773a46474696d651a65899a27656e6f6e63651a0004303368626974776f726b63666161626263636b6d696e745f7469636b657265717561726b68" {
-		t.Logf("%x", input.UpdateScript())
-		t.Logf("%x", input.MustBuildScript(input.UpdateCborCache()))
-		t.Fatal("script not expect")
-	}
-	if hex.EncodeToString(input.ScriptP2TR(input.UpdateScript()).Output) != "512097b1da1e3745f45b7905a52480f0926a72ea9964f21385fddb2dc4029fd1eab5" {
-		t.Fatalf("scriptP2TR %x", input.ScriptP2TR(input.UpdateScript()).Output)
-	}
-
-	var msgTx wire.MsgTx
-	data, _ := hex.DecodeString("01000000000101c8e7c2acfaa53f49e8197b899c86fd74d58d0084a2172855da3e044fdcccbbaa0100000000ffffffff01de5300000000000022512097b1da1e3745f45b7905a52480f0926a72ea9964f21385fddb2dc4029fd1eab50140949a4b47bd860b7563271311ec490ebac79b15b1286d94dc0e7c8004fcc3e904ad99746f09f315ac33fcd29dbd1a2f439ce6b789a5eb607809754930d2fa3d8e00000000")
-	if err := msgTx.Deserialize(bytes.NewReader(data)); err != nil {
-		t.Fatalf("msgTx.Deserialize failed: %v", err)
-	}
-	atomicals.PrintMsgTx(&msgTx)
-
-	scriptP2TR := input.ScriptP2TR(input.UpdateScript())
-	t.Logf("%x %x", scriptP2TR.Output, scriptP2TR.OutputKey.SerializeCompressed()[1:])
-	input.CopiedData.Args.Nonce++
-	t.Logf("%x %x", scriptP2TR.Output, scriptP2TR.OutputKey.SerializeCompressed()[1:])
 }
