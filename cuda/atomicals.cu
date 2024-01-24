@@ -238,7 +238,7 @@ __global__ void kernel_sha256d_hash(WORD threads, WORD inlen, WORD target_len, c
 
 __host__ void sha256d_hash_tx(int thr_id, WORD threads, WORD inlen, WORD target_len, char prefix_parital, char ext, uint32_t start_seq, uint32_t *res_seq)
 {
-	const uint32_t threadsperblock = 256;
+	const uint32_t threadsperblock = 1024;
 
 	dim3 grid(threads/threadsperblock);
 	dim3 block(threadsperblock);

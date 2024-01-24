@@ -11,22 +11,23 @@ import (
 	"bytes"
 	"log"
 	"os"
+	"time"
 
 	"github.com/btcsuite/btcd/wire"
 )
 
-func Mine(input Input, result chan<- Result) {
+func Mine(input Input, threads uint32, result chan<- Result) {
 	deviceNum := 1
 	devcieNumStr := os.Getenv("CUDA_DEVICE_NUM")
 	if devcieNumStr != "" {
 		deviceNum = int(devcieNumStr[0] - '0')
 	}
 	for i := 0; i < deviceNum; i++ {
-		go mine(i, input, result)
+		go mine(i, input, threads, result)
 	}
 }
 
-func mine(i int, input Input, result chan<- Result) {
+func mine(i int, input Input, threads uint32, result chan<- Result) {
 	// set different time for each goroutine
 	input.CopiedData.Args.Time += uint32(i)
 	// use uint32 so we can avoid cbor encoding at runtime
@@ -63,6 +64,7 @@ func mine(i int, input Input, result chan<- Result) {
 		ext = int(input.WorkerBitworkInfoCommit.Ext)
 	}
 	for {
+		start := time.Now()
 		seq := C.scanhash_sha256d(
 			C.int(i), // device id
 			(*C.uchar)(&serializedTx[0]),
@@ -71,11 +73,11 @@ func mine(i int, input Input, result chan<- Result) {
 			C.uint(len(input.WorkerBitworkInfoCommit.PrefixBytes)),
 			C.char(pp),
 			C.char(ext),
-			C.uint(1<<23),
+			C.uint(1<<threads),
 			C.uint(txIn.Sequence),
 			&hashesDone,
 		)
-		log.Printf("device: %d, seq: %d, hashesDone: %d", i, seq, hashesDone)
+		log.Printf("device: %d, hashrate: %d/s", i, int64(float64(hashesDone)/time.Since(start).Seconds()))
 		if uint32(seq) != MAX_SEQUENCE {
 			txIn.Sequence = uint32(seq)
 			break

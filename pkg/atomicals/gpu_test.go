@@ -20,14 +20,14 @@ func TestGPUMine(t *testing.T) {
 				Bitworkc:   &workc,
 				MintTicker: "quark",
 				Nonce:      274483,
-				Time:       1703516711,
+				Time:       uint32(time.Now().Unix()),
 			},
 		},
 		WorkerOptions: atomicals.WorkerOptions{
 			OpType: "dmt",
 		},
 		WorkerBitworkInfoCommit: &atomicals.BitworkInfo{
-			Prefix: "aabbccd1",
+			Prefix: "aabbccd12",
 		},
 		FundingWIF: "Kz9gWCiZGnHzxQBpbJW6UShBmxrMQXHktEfYAUcsbFkcyNcEAKzA",
 		FundingUtxo: atomicals.FundingUtxo{
@@ -35,9 +35,12 @@ func TestGPUMine(t *testing.T) {
 		},
 	}
 	input.Init()
-	result := make(chan atomicals.Result, 1)
-	start := time.Now()
-	go atomicals.Mine(input, result)
-	r := <-result
-	t.Logf("%+v cost: %v", r, time.Since(start))
+	for i := 0; i < 10; i++ {
+		t.Logf("test threads %d", 15+i)
+		result := make(chan atomicals.Result, 1)
+		start := time.Now()
+		go atomicals.Mine(input, uint32(20+i), result)
+		r := <-result
+		t.Logf("%+v cost: %v", r, time.Since(start))
+	}
 }
