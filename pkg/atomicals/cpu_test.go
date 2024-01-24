@@ -5,7 +5,6 @@ package atomicals_test
 
 import (
 	"go-atomicals/pkg/atomicals"
-	"go-atomicals/pkg/hashrate"
 	"testing"
 	"time"
 
@@ -14,10 +13,11 @@ import (
 
 func TestCPUMine(t *testing.T) {
 	var hash chainhash.Hash
+	workc := "aabbccd"
 	input := atomicals.Input{
 		CopiedData: atomicals.CopiedData{
 			Args: atomicals.Args{
-				Bitworkc:   "aabbcc",
+				Bitworkc:   &workc,
 				MintTicker: "quark",
 				Nonce:      274483,
 				Time:       1703516711,
@@ -26,8 +26,8 @@ func TestCPUMine(t *testing.T) {
 		WorkerOptions: atomicals.WorkerOptions{
 			OpType: "dmt",
 		},
-		WorkerBitworkInfoCommit: atomicals.BitworkInfo{
-			Prefix: "aabbccdea",
+		WorkerBitworkInfoCommit: &atomicals.BitworkInfo{
+			Prefix: "aabbccd",
 		},
 		FundingWIF: "Kz9gWCiZGnHzxQBpbJW6UShBmxrMQXHktEfYAUcsbFkcyNcEAKzA",
 		FundingUtxo: atomicals.FundingUtxo{
@@ -36,9 +36,8 @@ func TestCPUMine(t *testing.T) {
 	}
 	input.Init()
 	result := make(chan atomicals.Result, 1)
-	reporter := hashrate.NewReporter()
 	start := time.Now()
-	go atomicals.Mine(input, result, reporter)
+	go atomicals.Mine(input, result)
 	r := <-result
 	t.Logf("%+v cost: %v", r, time.Since(start))
 }

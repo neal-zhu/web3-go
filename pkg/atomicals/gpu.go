@@ -71,7 +71,7 @@ func mine(i int, input Input, result chan<- Result) {
 			C.uint(len(input.WorkerBitworkInfoCommit.PrefixBytes)),
 			C.char(pp),
 			C.char(ext),
-			C.uint(1<<25),
+			C.uint(1<<23),
 			C.uint(txIn.Sequence),
 			&hashesDone,
 		)

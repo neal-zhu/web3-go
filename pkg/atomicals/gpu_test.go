@@ -13,10 +13,11 @@ import (
 
 func TestGPUMine(t *testing.T) {
 	var hash chainhash.Hash
+	workc := "aabbcc"
 	input := atomicals.Input{
 		CopiedData: atomicals.CopiedData{
 			Args: atomicals.Args{
-				Bitworkc:   "aabbcc",
+				Bitworkc:   &workc,
 				MintTicker: "quark",
 				Nonce:      274483,
 				Time:       1703516711,
@@ -25,9 +26,8 @@ func TestGPUMine(t *testing.T) {
 		WorkerOptions: atomicals.WorkerOptions{
 			OpType: "dmt",
 		},
-		WorkerBitworkInfoCommit: atomicals.BitworkInfo{
-			Prefix: "aabbccde",
-			Ext:    5,
+		WorkerBitworkInfoCommit: &atomicals.BitworkInfo{
+			Prefix: "aabbccd1",
 		},
 		FundingWIF: "Kz9gWCiZGnHzxQBpbJW6UShBmxrMQXHktEfYAUcsbFkcyNcEAKzA",
 		FundingUtxo: atomicals.FundingUtxo{
