@@ -3,7 +3,6 @@ package atomicals
 import (
 	"bytes"
 	"fmt"
-	"go-atomicals/pkg/hashrate"
 	"log"
 	"time"
 
@@ -12,7 +11,7 @@ import (
 	"github.com/btcsuite/btcd/wire"
 )
 
-func MineRevealTx(input *Input, result *Result, reporter *hashrate.HashRateReporter) (revealTxHash chainhash.Hash, data []byte) {
+func MineRevealTx(input *Input, result *Result) (revealTxHash chainhash.Hash, data []byte) {
 	var (
 		err   error
 		embed []byte

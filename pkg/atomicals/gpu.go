@@ -9,14 +9,13 @@ package atomicals
 import "C"
 import (
 	"bytes"
-	"go-atomicals/pkg/hashrate"
 	"log"
 	"os"
 
 	"github.com/btcsuite/btcd/wire"
 )
 
-func Mine(input Input, result chan<- Result, reporter *hashrate.HashRateReporter) {
+func Mine(input Input, result chan<- Result) {
 	deviceNum := 1
 	devcieNumStr := os.Getenv("CUDA_DEVICE_NUM")
 	if devcieNumStr != "" {
@@ -27,7 +26,7 @@ func Mine(input Input, result chan<- Result, reporter *hashrate.HashRateReporter
 	}
 }
 
-func mine(i int, input Input, result chan<- Result, reporter *hashrate.HashRateReporter) {
+func mine(i int, input Input, result chan<- Result) {
 	// set different time for each goroutine
 	input.CopiedData.Args.Time += uint32(i)
 	// use uint32 so we can avoid cbor encoding at runtime
