@@ -5,7 +5,6 @@ package atomicals_test
 
 import (
 	"go-atomicals/pkg/atomicals"
-	"go-atomicals/pkg/hashrate"
 	"testing"
 	"time"
 
@@ -37,9 +36,8 @@ func TestGPUMine(t *testing.T) {
 	}
 	input.Init()
 	result := make(chan atomicals.Result, 1)
-	reporter := hashrate.NewReporter()
 	start := time.Now()
-	go atomicals.Mine(input, result, reporter)
+	go atomicals.Mine(input, result)
 	r := <-result
 	t.Logf("%+v cost: %v", r, time.Since(start))
 }

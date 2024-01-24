@@ -22,7 +22,7 @@ func Mine(input Input, result chan<- Result) {
 		deviceNum = int(devcieNumStr[0] - '0')
 	}
 	for i := 0; i < deviceNum; i++ {
-		go mine(i, input, result, reporter)
+		go mine(i, input, result)
 	}
 }
 
