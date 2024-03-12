@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"go-atomicals/pkg/atomicals"
-	"go-atomicals/pkg/hashrate"
 	"log"
 	"os"
 	"time"
@@ -18,10 +17,9 @@ func main() {
 	}
 
 	start := time.Now()
-	reporter := hashrate.NewReporter()
 	// core count
 	result := make(chan atomicals.Result, 1)
-	go atomicals.Mine(input, result, reporter)
+	go atomicals.Mine(input, result)
 	finalData := <-result
 	log.Printf("found solution cost: %v", time.Since(start))
 

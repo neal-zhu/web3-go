@@ -27,7 +27,8 @@ func TestCPUMine(t *testing.T) {
 			OpType: "dmt",
 		},
 		WorkerBitworkInfoCommit: &atomicals.BitworkInfo{
-			Prefix: "aabbccd",
+			Prefix: "8888888",
+			Ext:    6,
 		},
 		FundingWIF: "Kz9gWCiZGnHzxQBpbJW6UShBmxrMQXHktEfYAUcsbFkcyNcEAKzA",
 		FundingUtxo: atomicals.FundingUtxo{

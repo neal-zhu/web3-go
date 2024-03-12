@@ -16,18 +16,19 @@ import (
 	"github.com/btcsuite/btcd/wire"
 )
 
-func Mine(input Input, threads uint32, result chan<- Result) {
+func Mine(input Input, result chan<- Result) {
 	deviceNum := 1
 	devcieNumStr := os.Getenv("CUDA_DEVICE_NUM")
 	if devcieNumStr != "" {
 		deviceNum = int(devcieNumStr[0] - '0')
 	}
 	for i := 0; i < deviceNum; i++ {
-		go mine(i, input, threads, result)
+		go mine(i, input, result)
 	}
 }
 
-func mine(i int, input Input, threads uint32, result chan<- Result) {
+func mine(i int, input Input, result chan<- Result) {
+	threads := 25
 	// set different time for each goroutine
 	input.CopiedData.Args.Time += uint32(i)
 	// use uint32 so we can avoid cbor encoding at runtime
